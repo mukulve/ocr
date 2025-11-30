@@ -60,18 +60,26 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Package binary
+      - name: Copy binary to dist/
         shell: bash
         run: |
-          BINARY="target/${{ matrix.target }}/release/ocr${{ matrix.suffix }}"
           mkdir -p dist
-          cp "$BINARY" "dist/"
+          cp "target/${{ matrix.target }}/release/ocr${{ matrix.suffix }}" dist/
+
+      # Windows packaging
+      - name: Package (Windows zip)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/ocr.exe" -DestinationPath "dist/${{ matrix.artifact }}.zip"
+
+      # Linux & macOS packaging
+      - name: Package (tar.gz)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
           cd dist
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            zip "${{ matrix.artifact }}.zip" ocr${{ matrix.suffix }}
-          else
-            tar -czf "${{ matrix.artifact }}.tar.gz" ocr${{ matrix.suffix }}
-          fi
+          tar -czf "${{ matrix.artifact }}.tar.gz" "ocr"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -97,6 +105,6 @@ jobs:
           files: |
             dist/ocr-linux/*.tar.gz
             dist/ocr-macos/*.tar.gz
-            dist/ocr-windows/*.exe
+            dist/ocr-windows/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
