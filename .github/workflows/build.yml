@@ -97,6 +97,6 @@ jobs:
           files: |
             dist/ocr-linux/*.tar.gz
             dist/ocr-macos/*.tar.gz
-            dist/ocr-windows/*.zip
+            dist/ocr-windows/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
