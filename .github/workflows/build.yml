@@ -22,7 +22,7 @@ jobs:
             artifact: ocr-linux
             suffix: ""
             use_cross: false
-            deps: "libgtk-3-dev libclang-dev libgtk-3-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev"
+            deps: "libgtk-3-dev libclang-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev"
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact: ocr-macos
@@ -65,11 +65,12 @@ jobs:
         run: |
           BINARY="target/${{ matrix.target }}/release/ocr${{ matrix.suffix }}"
           mkdir -p dist
-          cp "$BINARY" "dist/ocr-${{ matrix.os }}${{ matrix.suffix }}"
-          if [ "${{ matrix.os }}" != "windows-latest" ]; then
-            tar -czf "dist/ocr-${{ matrix.artifact }}.tar.gz" -C dist .
+          cp "$BINARY" "dist/"
+          cd dist
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            zip "${{ matrix.artifact }}.zip" ocr${{ matrix.suffix }}
           else
-            mv "dist/ocr-${{ matrix.os }}${{ matrix.suffix }}" "dist/ocr-${{ matrix.artifact }}${{ matrix.suffix }}"
+            tar -czf "${{ matrix.artifact }}.tar.gz" ocr${{ matrix.suffix }}
           fi
 
       - name: Upload artifacts
@@ -85,14 +86,17 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: dist
 
-      - name: Create Release
+      - name: List downloaded files
+        run: ls -R dist
+
+      - name: Upload release binaries to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/ocr-linux/*.tar.gz
-            artifacts/ocr-macos/*.tar.gz
-            artifacts/ocr-windows/*.exe
+            dist/ocr-linux/*.tar.gz
+            dist/ocr-macos/*.tar.gz
+            dist/ocr-windows/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
