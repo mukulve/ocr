@@ -1,7 +1,9 @@
 use std::{path::PathBuf, sync::Arc};
-use eframe::egui::{self, Color32, RichText};
+use eframe::egui::{self, Color32, FontId, RichText};
 use ocrmypdf_rs::{Ocr, OcrMyPdf};
 use rfd::FileDialog;
+use catppuccin_egui::{set_theme, MOCHA, LATTE}; 
+  
 
 struct OcrApp {
     input_paths: Option<Vec<PathBuf>>,
@@ -21,6 +23,13 @@ impl Default for OcrApp {
 
 impl eframe::App for OcrApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        match dark_light::detect() {
+            Ok(dark_light::Mode::Dark) => set_theme(ctx, MOCHA),
+            Ok(dark_light::Mode::Light) => set_theme(ctx, LATTE),
+            Ok(dark_light::Mode::Unspecified) => set_theme(ctx, LATTE),
+            Err(_) => set_theme(ctx, LATTE),
+        }
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("PDF OCR App");
 
@@ -35,7 +44,7 @@ impl eframe::App for OcrApp {
                     ui.horizontal(|ui| {
                         for path in chunk {
                             ui.vertical(|ui| {
-                                ui.label("📄");
+                                ui.label(RichText::new("📄").font(FontId::proportional(40.0)));
                                 ui.label(path.file_name().unwrap_or_default().to_string_lossy());
                                 
                                 let button_text = format!("Delete '{}'", 
@@ -51,6 +60,8 @@ impl eframe::App for OcrApp {
                     });
                 }
             });
+
+            ui.add_space(10.0);
 
             ui.horizontal(|ui| {
                 if ui.button("Select Input PDF").clicked() {
@@ -84,13 +95,21 @@ impl eframe::App for OcrApp {
                 ui.label("Processing PDF...");
             }
 
-            if ui.button("Start OCR").clicked() {
-                if self.input_paths.is_some() {
-                    self.processing = true;
-                    run_ocr_on_pdfs(self.input_paths.as_ref().unwrap());
-                    self.processing = false;
+            if self.input_paths.is_some() {
+
+                ui.add_space(10.0);
+    
+                if ui.button("Start OCR").clicked() {
+                    if self.input_paths.is_some() {
+                        self.processing = true;
+                        run_ocr_on_pdfs(self.input_paths.as_ref().unwrap());
+                        self.processing = false;
+                    }
                 }
+            } else {
+                ui.label("No Files Selected");
             }
+
         });
     }
 }
@@ -114,9 +133,15 @@ fn main() -> eframe::Result<()> {
     let icon = eframe::icon_data::from_png_bytes(include_bytes!("./icon.png"))
         .expect("The icon data must be valid");
 
-
     let mut options = eframe::NativeOptions::default();
-    options.viewport.icon = Some(Arc::new(icon));
+    options.viewport = options.viewport
+        .with_inner_size([800.0, 600.0])
+        .with_min_inner_size([500.0, 400.0])
+        .with_has_shadow(true)
+        .with_title("PDF OCR App")
+        .with_icon(Arc::new(icon));
+    options.centered = true;
+
     eframe::run_native(
         "PDF OCR App",
         options,

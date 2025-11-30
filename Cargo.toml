@@ -7,3 +7,5 @@ edition = "2024"
 eframe = "0.33.2"
 ocrmypdf-rs = "0.0.8"
 rfd = "0.16.0"
+catppuccin-egui = { version = "5.7.0", default-features = false, features = ["egui33"] }
+dark-light = "2.0.0"
